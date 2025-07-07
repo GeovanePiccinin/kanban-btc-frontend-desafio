@@ -1,3 +1,4 @@
+import { ToastContainer, toast } from "react-toastify";
 import {
   Backdrop,
   Fade,
@@ -7,9 +8,12 @@ import {
   TextField,
   Typography,
   Divider,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import React, { useEffect, useRef, useState } from "react";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import Moment from "moment";
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
@@ -41,6 +45,10 @@ const TaskModal = (props) => {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const editorWrapperRef = useRef();
+
+  const [category, setCategory] = useState("");
+
+  const notify = (message) => toast(message);
 
   useEffect(() => {
     setTask(props.task);
@@ -95,6 +103,20 @@ const TaskModal = (props) => {
     props.onUpdate(task);
   };
 
+  const updateCategory = async (event) => {
+    const newCategory = event.target.value;
+    timer = setTimeout(async () => {
+      try {
+        await taskApi.update(boardId, task.id, { category: newCategory });
+        notify("Category updated");
+      } catch (err) {
+        alert(err);
+      }
+    }, timeout);
+    setCategory(newCategory);
+    task.category = newCategory;
+  };
+
   const updateContent = async (event, editor) => {
     clearTimeout(timer);
     const data = editor.getData();
@@ -117,79 +139,97 @@ const TaskModal = (props) => {
   };
 
   return (
-    <Modal
-      open={task !== undefined}
-      onClose={onClose}
-      closeAfterTransition
-      BackdropComponent={Backdrop}
-      BackdropProps={{ timeout: 500 }}
-    >
-      <Fade in={task !== undefined}>
-        <Box sx={modalStyle}>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              width: "100%",
-            }}
-          >
-            <IconButton variant="outlined" color="error" onClick={deleteTask}>
-              <DeleteOutlinedIcon />
-            </IconButton>
-          </Box>
-          <Box
-            sx={{
-              display: "flex",
-              height: "100%",
-              flexDirection: "column",
-              padding: "2rem 5rem 5rem",
-            }}
-          >
-            <TextField
-              value={title}
-              onChange={updateTitle}
-              placeholder="Untitled"
-              variant="outlined"
-              fullWidth
-              sx={{
-                width: "100%",
-                "& .MuiOutlinedInput-input": { padding: 0 },
-                "& .MuiOutlinedInput-notchedOutline": { border: "unset " },
-                "& .MuiOutlinedInput-root": {
-                  fontSize: "2.5rem",
-                  fontWeight: "700",
-                },
-                marginBottom: "10px",
-              }}
-            />
-            <Typography variant="body2" fontWeight="700">
-              {task !== undefined
-                ? Moment(task.createdAt).format("YYYY-MM-DD")
-                : ""}
-            </Typography>
-            <Divider sx={{ margin: "1.5rem 0" }} />
+    <>
+      <ToastContainer />
+
+      <Modal
+        open={task !== undefined}
+        onClose={onClose}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{ timeout: 500 }}
+      >
+        <Fade in={task !== undefined}>
+          <Box sx={modalStyle}>
             <Box
-              ref={editorWrapperRef}
               sx={{
-                position: "relative",
-                height: "80%",
-                overflowX: "hidden",
-                overflowY: "auto",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                width: "100%",
               }}
             >
-              <CKEditor
-                editor={ClassicEditor}
-                data={content}
-                onChange={updateContent}
-                onFocus={updateEditorHeight}
-                onBlur={updateEditorHeight}
+              <IconButton variant="outlined" color="error" onClick={deleteTask}>
+                <DeleteOutlinedIcon />
+              </IconButton>
+              <IconButton variant="outlined" color="error" onClick={onClose}>
+                <CloseOutlinedIcon />
+              </IconButton>
+            </Box>
+            <Box
+              sx={{
+                display: "flex",
+                height: "100%",
+                flexDirection: "column",
+                padding: "2rem 5rem 5rem",
+              }}
+            >
+              <TextField
+                value={title}
+                onChange={updateTitle}
+                placeholder="Untitled"
+                variant="outlined"
+                fullWidth
+                sx={{
+                  width: "100%",
+                  "& .MuiOutlinedInput-input": { padding: 0 },
+                  "& .MuiOutlinedInput-notchedOutline": { border: "unset " },
+                  "& .MuiOutlinedInput-root": {
+                    fontSize: "2.5rem",
+                    fontWeight: "700",
+                  },
+                  marginBottom: "10px",
+                }}
               />
+              <Typography variant="body2" fontWeight="700">
+                {task !== undefined
+                  ? Moment(task.createdAt).format("YYYY-MM-DD")
+                  : ""}
+              </Typography>
+              <Select
+                labelId="category-select"
+                id="category-select"
+                value={category}
+                label="Category"
+                onChange={updateCategory}
+              >
+                <MenuItem value={"urgent"}>Urgent</MenuItem>
+                <MenuItem value={"medium"}>Medium</MenuItem>
+                <MenuItem value={"low"}>Low</MenuItem>
+              </Select>
+              <Divider sx={{ margin: "1.5rem 0" }} />
+              <Box
+                ref={editorWrapperRef}
+                sx={{
+                  position: "relative",
+                  height: "80%",
+                  overflowX: "hidden",
+                  overflowY: "auto",
+                }}
+              >
+                <CKEditor
+                  editor={ClassicEditor}
+                  data={content}
+                  onChange={updateContent}
+                  onFocus={updateEditorHeight}
+                  onBlur={updateEditorHeight}
+                />
+              </Box>
             </Box>
           </Box>
-        </Box>
-      </Fade>
-    </Modal>
+        </Fade>
+      </Modal>
+    </>
   );
 };
 
